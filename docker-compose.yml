@@ -1,0 +1,117 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: django_password
+      POSTGRES_DB: django_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_server
+    restart: always
+    depends_on:
+      - django
+      - application_1
+      - application_2
+      - application_3
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+
+  django:
+    build:
+      context: ./django
+      dockerfile: Dockerfile
+    container_name: django_backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DJANGO_DB_HOST: db
+      DJANGO_DB_NAME: django_db
+      DJANGO_DB_USER: django
+      DJANGO_DB_PASSWORD: django_password
+    volumes:
+      - ./django:/app
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  application_1:
+    build:
+      context: ./applications/app1
+      dockerfile: Dockerfile
+    container_name: app1_backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      APP_DB_HOST: db
+      APP_DB_NAME: django_db
+      APP_DB_USER: django
+      APP_DB_PASSWORD: django_password
+    ports:
+      - "8001:8001"
+
+  application_2:
+    build:
+      context: ./applications/app2
+      dockerfile: Dockerfile
+    container_name: app2_backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      APP_DB_HOST: db
+      APP_DB_NAME: django_db
+      APP_DB_USER: django
+      APP_DB_PASSWORD: django_password
+    ports:
+      - "8002:8002"
+
+  application_3:
+    build:
+      context: ./applications/app3
+      dockerfile: Dockerfile
+    container_name: app3_backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      APP_DB_HOST: db
+      APP_DB_NAME: django_db
+      APP_DB_USER: django
+      APP_DB_PASSWORD: django_password
+    ports:
+      - "8003:8003"
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.40.1-focal
+    container_name: playwright_tests
+    volumes:
+      - ./playwright:/mnt/playwright
+    entrypoint: ["tail", "-f", "/dev/null"]
+
+  vegeta:
+    image: peterevans/vegeta
+    container_name: vegeta_tester
+    entrypoint: [""]
+    command: >
+      sh -c "echo 'GET http://nginx' |
+             vegeta attack -duration=5s -rate=100 |
+             vegeta report"
+
+volumes:
+  postgres_data:
