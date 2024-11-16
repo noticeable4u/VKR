@@ -31,10 +31,10 @@ jobs:
       - name: Run Load Test
         run: |
           # Запускаем нагрузочный тест через Vegeta
-          vegeta attack -rate=100 -duration=30s -targets=targets.txt | tee results.bin | vegeta report
+          vegeta attack -rate=100 -duration=15s -targets=targets.txt | tee results.bin | vegeta report
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3  # Обновленная версия действия для загрузки артефактов
         with:
           name: load-test-results
           path: results.bin  # Загружаем результаты теста как артефакт
