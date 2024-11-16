@@ -1,0 +1,40 @@
+name: Load Test with Vegeta
+
+on:
+  push:
+    branches:
+      - main  # Запуск тестов при пуше в ветку main
+  pull_request:
+    branches:
+      - main  # Запуск тестов при создании PR в ветку main
+
+jobs:
+  vegeta-load-test:
+    runs-on: ubuntu-latest  # Используем виртуальную машину Ubuntu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # Клонируем код репозитория
+
+      - name: Set up Vegeta
+        run: |
+          # Скачиваем и устанавливаем Vegeta
+          wget https://github.com/tsenart/vegeta/releases/download/v12.0.0/vegeta-12.0.0-linux-amd64.tar.gz
+          tar -xvf vegeta-12.0.0-linux-amd64.tar.gz
+          sudo mv vegeta /usr/local/bin
+
+      - name: Prepare Targets for Load Test
+        run: |
+          # Создаем файл с целями для теста
+          echo "GET https://reu.rf" > targets.txt  # Цель - главная страница сайта reu.rf
+
+      - name: Run Load Test
+        run: |
+          # Запускаем нагрузочный тест через Vegeta
+          vegeta attack -rate=100 -duration=30s -targets=targets.txt | tee results.bin | vegeta report
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: load-test-results
+          path: results.bin  # Загружаем результаты теста как артефакт
