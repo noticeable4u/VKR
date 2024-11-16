@@ -14,14 +14,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # Клонируем код репозитория
+        uses: actions/checkout@v3  # Обновили версию actions/checkout
 
       - name: Set up Vegeta
         run: |
           # Скачиваем и устанавливаем Vegeta
-          wget https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_amd64.tar.gz
-          tar -xvf vegeta-12.0.0-linux-amd64.tar.gz
+          echo "Downloading Vegeta..."
+          wget https://github.com/tsenart/vegeta/releases/download/v12.1.0/vegeta-12.1.0-linux-amd64.tar.gz
+          if [ $? -ne 0 ]; then echo "Failed to download Vegeta"; exit 1; fi  # Проверяем успех скачивания
+          echo "Extracting Vegeta..."
+          tar -xvf vegeta-12.1.0-linux-amd64.tar.gz
           sudo mv vegeta /usr/local/bin
+          if [ $? -ne 0 ]; then echo "Failed to install Vegeta"; exit 1; fi  # Проверяем успешную установку
 
       - name: Prepare Targets for Load Test
         run: |
@@ -31,7 +35,9 @@ jobs:
       - name: Run Load Test
         run: |
           # Запускаем нагрузочный тест через Vegeta
-          vegeta attack -rate=100 -duration=15s -targets=targets.txt | tee results.bin | vegeta report
+          echo "Running Load Test..."
+          vegeta attack -rate=100 -duration=30s -targets=targets.txt | tee results.bin | vegeta report
+          if [ $? -ne 0 ]; then echo "Vegeta test failed"; exit 1; fi  # Проверка на ошибки
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v3  # Обновленная версия действия для загрузки артефактов
